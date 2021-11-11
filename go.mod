@@ -1,5 +1,7 @@
 module go.lepak.sg/mrtracker-backend
 
+// +heroku goVersion go1.17
+// +heroku install ./cmd/server/...
 go 1.17
 
 require (

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 
@@ -9,9 +10,11 @@ import (
 )
 
 const (
-	envAddr = "ADDR"
+	envHost = "HOST"
+	envPort = "PORT"
 
-	defaultAddr     = "0.0.0.0:8080"
+	defaultHost     = "0.0.0.0"
+	defaultPort     = "8080"
 	defaultPromAddr = "127.0.0.1:9100"
 )
 
@@ -19,10 +22,16 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	addr, ok := os.LookupEnv(envAddr)
+	host, ok := os.LookupEnv(envHost)
 	if !ok {
-		addr = defaultAddr
+		host = defaultHost
 	}
 
+	port, ok := os.LookupEnv(envPort)
+	if !ok {
+		port = defaultPort
+	}
+
+	addr := fmt.Sprintf("%s:%s", host, port)
 	server.StartHttp(ctx, addr, defaultPromAddr)
 }
