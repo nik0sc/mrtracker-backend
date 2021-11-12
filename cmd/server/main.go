@@ -15,7 +15,7 @@ const (
 
 	defaultHost     = "0.0.0.0"
 	defaultPort     = "8080"
-	defaultPromAddr = "127.0.0.1:9100"
+	defaultPromAddr = "0.0.0.0:9100" // TODO: restrict to prometheus bridge network only?
 )
 
 func main() {
