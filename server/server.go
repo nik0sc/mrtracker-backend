@@ -8,12 +8,14 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.lepak.sg/mrtracker-backend/server/handler/position"
+	"go.lepak.sg/mrtracker-backend/server/handler/status"
 )
 
 /*
 TODO:
  - on-demand updating from smrt api
  - fallback to recorded positions if api failed
+ - possibly scrape alternative apis (eg the sg busleh one, do they use their own proxy?)
 */
 
 // StartHttp starts the http server. It blocks until the context is cancelled, then it will shut down the server.
@@ -42,6 +44,7 @@ func StartHttp(ctx context.Context, addr string, promAddr string) {
 		UpdateInterval: 0, // default
 		Strategy:       position.UpdateLive,
 	}))
+	mux.Handle("/v1/status", status.Handler{})
 	srv := &http.Server{
 		Addr:    addr,
 		Handler: mux,
