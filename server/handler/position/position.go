@@ -174,6 +174,8 @@ func (h *handler) update() {
 			ent.data = packedHex // aliasing is ok, we are not retaining packedHex
 			ent.lastUpdated = time.Now()
 			ent.lock.Unlock()
+
+			h.metrics.BgLastUpdated.SetToCurrentTime()
 		}()
 	}
 }
