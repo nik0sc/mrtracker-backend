@@ -40,6 +40,7 @@ func newMetrics() *metrics {
 			Namespace: "traintracker",
 			Subsystem: "bg",
 			Name:      "requests",
+			Help:      "Number of requests made to third-party APIs",
 		}),
 		BgErrors: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace: "traintracker",
@@ -50,7 +51,7 @@ func newMetrics() *metrics {
 			Namespace: "traintracker",
 			Subsystem: "bg",
 			Name:      "latency",
-			Buckets:   []float64{0.5, 1, 2, 3, 5, 7.5, 10, 12.5, 15},
+			Buckets:   []float64{3, 4, 5, 6, 7, 8, 9, 10, 12.5, 15},
 		}),
 		BgLastUpdated: prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace: "traintracker",
@@ -61,7 +62,8 @@ func newMetrics() *metrics {
 
 	prometheus.MustRegister(
 		m.Requests, m.Errors, m.Latency,
-		m.BgRequests, m.BgErrors, m.BgLatency, m.BgLastUpdated)
+		m.BgRequests, m.BgErrors, m.BgLatency,
+		m.BgLastUpdated)
 
 	return m
 }

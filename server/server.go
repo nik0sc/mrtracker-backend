@@ -39,11 +39,11 @@ func StartHttp(ctx context.Context, addr string, privAddr string) {
 	}
 
 	wg.Add(1)
-	go func(wg *sync.WaitGroup, promSrv *http.Server) {
+	go func(wg *sync.WaitGroup, privSrv *http.Server) {
 		defer wg.Done()
-		err := promSrv.ListenAndServe()
+		err := privSrv.ListenAndServe()
 		if err != http.ErrServerClosed {
-			log.Fatalf("prom handler: %v", err)
+			log.Fatalf("priv handler: %v", err)
 		}
 	}(wg, privSrv)
 
@@ -52,6 +52,8 @@ func StartHttp(ctx context.Context, addr string, privAddr string) {
 		Ctx:            ctx,
 		UpdateInterval: 0, // default
 		Strategy:       position.UpdateLive,
+		NumWorkers:     10,
+		MaxTries:       100,
 	}))
 	mux.Handle("/v1/status", status.Handler{})
 	srv := &http.Server{
@@ -77,7 +79,7 @@ func StartHttp(ctx context.Context, addr string, privAddr string) {
 
 	err = privSrv.Shutdown(context.Background())
 	if err != nil {
-		log.Printf("error shutting down prom server: %v", err)
+		log.Printf("error shutting down priv server: %v", err)
 	}
 
 	wg.Wait()

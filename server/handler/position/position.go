@@ -16,6 +16,7 @@ import (
 
 const (
 	defaultUpdateInterval = 15 * time.Second
+	defaultMaxTries       = 20
 )
 
 const (
@@ -35,6 +36,9 @@ type handler struct {
 	wg       sync.WaitGroup
 	tick     *time.Ticker
 	interval time.Duration
+
+	numWorkers int
+	maxTries   int
 
 	metrics *metrics
 }
@@ -64,6 +68,8 @@ type NewParam struct {
 	Ctx            context.Context
 	UpdateInterval time.Duration
 	Strategy       int
+	NumWorkers     int
+	MaxTries       int
 }
 
 func New(p NewParam) (*handler, error) {
@@ -73,12 +79,20 @@ func New(p NewParam) (*handler, error) {
 	if p.Ctx == nil {
 		p.Ctx = context.Background()
 	}
+	if p.MaxTries <= 0 {
+		p.MaxTries = defaultMaxTries
+	}
+	if p.NumWorkers < 0 {
+		p.NumWorkers = 0
+	}
 
 	h := &handler{
-		sharedMap: make(map[string]*entry),
-		tick:      time.NewTicker(p.UpdateInterval),
-		interval:  p.UpdateInterval,
-		metrics:   newMetrics(),
+		sharedMap:  make(map[string]*entry),
+		tick:       time.NewTicker(p.UpdateInterval),
+		interval:   p.UpdateInterval,
+		metrics:    newMetrics(),
+		numWorkers: p.NumWorkers,
+		maxTries:   p.MaxTries,
 	}
 	h.ctx, h.cancel = context.WithCancel(p.Ctx)
 
@@ -122,7 +136,6 @@ func (h *handler) update() {
 			defer func() {
 				cancel()
 				h.metrics.BgLatency.Observe(time.Since(startTime).Seconds())
-				h.metrics.BgRequests.Inc()
 				if err != nil {
 					h.metrics.BgErrors.Inc()
 				}
@@ -135,11 +148,13 @@ func (h *handler) update() {
 				}
 			}()
 
-			results, err := smrt.GetN(ctx, 0, 10, names...)
+			results, tries, err := smrt.GetN(ctx, h.numWorkers, h.maxTries, names...)
 			if err != nil {
 				log.Printf("error: smrt scrape failed: %v", err)
 				return
 			}
+			log.Printf("tries: %d", tries)
+			h.metrics.BgRequests.Add(float64(tries))
 
 			workingMap := make(map[string]model.Position)
 			for _, l := range data.GetLines() {

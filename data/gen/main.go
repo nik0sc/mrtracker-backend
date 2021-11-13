@@ -100,7 +100,7 @@ func main() {
 		end := line[len(line)-1].Name
 	outerLoop:
 		for i, station := range line {
-			res, err := smrt.GetOne(context.Background(), 5, station.Name)
+			res, _, err := smrt.GetOne(context.Background(), 5, station.Name)
 			if err != nil {
 				log.Printf("error [%s][%s]: %v", k, station.Name, err)
 				continue

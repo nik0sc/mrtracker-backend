@@ -14,7 +14,6 @@ import (
 
 const (
 	endpointPlatform = "https://connectv3.smrt.wwprojects.com/smrt/api/train_arrival_time_by_platform/?platform="
-	fakeUA           = "SMRT Connect/3.3.3 Android/9.0"
 )
 
 func GetOnePlatform(ctx context.Context, maxTries int, platform string) (*NextTrains, error) {

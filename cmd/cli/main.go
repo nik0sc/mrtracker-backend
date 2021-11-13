@@ -69,7 +69,7 @@ func main() {
 
 			fmt.Println("loading...")
 
-			results, err := smrt.GetN(ctx, 0, 10, names...)
+			results, _, err := smrt.GetN(ctx, 0, 10, names...)
 			if err != nil {
 				fmt.Println("error:", err)
 				return

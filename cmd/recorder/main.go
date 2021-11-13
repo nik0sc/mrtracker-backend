@@ -88,7 +88,7 @@ func main() {
 
 			now := time.Now()
 
-			results, err := smrt.GetN(pollCtx, 0, 10, names...)
+			results, _, err := smrt.GetN(pollCtx, 0, 10, names...)
 			if err != nil {
 				return err
 			}

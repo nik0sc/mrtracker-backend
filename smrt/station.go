@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -16,17 +17,22 @@ const (
 	endpointStation = "https://connectv3.smrt.wwprojects.com/smrt/api/train_arrival_time_by_id/?station="
 )
 
-func GetOne(ctx context.Context, maxTries int, station string) (Result, error) {
+// GetOne simply gets the arrival info for the named station.
+// maxTries must be at least 1. If the context is cancelled the request is abandoned.
+// The NextTrains array is returned along with the number of tries actually taken.
+func GetOne(ctx context.Context, maxTries int, station string) (Result, int, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", endpointStation+url.QueryEscape(station), nil)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	//req.Header.Set("User-Agent", fakeUA)
+	req.Header.Set("User-Agent", fakeUA)
 	out := make(map[string]Result)
 
+	triesLeft := maxTries
+
 retryLoop:
-	for maxTries > 0 {
-		maxTries--
+	for triesLeft > 0 {
+		triesLeft--
 		var resp *http.Response
 		resp, err = http.DefaultClient.Do(req)
 		if err != nil {
@@ -57,6 +63,19 @@ retryLoop:
 			continue
 		}
 
+		if resp.StatusCode == 404 {
+			// special case: treat this as a recoverable error
+			// sometimes the api will return 404 but on subsequent
+			// requests the data is returned normally
+			// maybe their load balancer is pointing to a stale instance?
+			err = fmt.Errorf("404: %s", station)
+			time.Sleep(100 * time.Millisecond) // TODO configurable
+			continue
+		} else if resp.StatusCode != 200 {
+			err = fmt.Errorf("unrecoverable error code [%d]: %s", resp.StatusCode, station)
+			break
+		}
+
 		err = json.Unmarshal(buf, &out)
 		if err != nil {
 			continue
@@ -74,11 +93,13 @@ retryLoop:
 		break
 	}
 
+	tries := maxTries - triesLeft
+
 	if err != nil {
 		log.Printf("error from smrt: %s", err.Error())
-		return nil, err
+		return nil, tries, err
 	} else {
-		return out["results"], nil
+		return out["results"], tries, nil
 	}
 }
 
@@ -89,7 +110,9 @@ retryLoop:
 // maxTries is the maximum number of times a request for one station will be made.
 // If ctx expires while GetN is still querying the SMRT API, all work will be abandoned
 // and the context error will be returned.
-func GetN(ctx context.Context, numWorkers, maxTries int, stations ...string) (map[string]Result, error) {
+// Along with the station arrival data, a count of the total number of network requests made
+// is returned.
+func GetN(ctx context.Context, numWorkers, maxTries int, stations ...string) (map[string]Result, int64, error) {
 	if numWorkers <= 0 {
 		numWorkers = len(stations)
 	}
@@ -101,6 +124,8 @@ func GetN(ctx context.Context, numWorkers, maxTries int, stations ...string) (ma
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	var totalTries int64
 
 	workerWg.Add(numWorkers)
 	for i := 0; i < numWorkers; i++ {
@@ -115,7 +140,8 @@ func GetN(ctx context.Context, numWorkers, maxTries int, stations ...string) (ma
 					if !ok {
 						return
 					}
-					result, err := GetOne(ctx, maxTries, station)
+					result, tries, err := GetOne(ctx, maxTries, station)
+					atomic.AddInt64(&totalTries, int64(tries))
 					if err != nil {
 						cancel()
 						resultCh <- err
@@ -167,5 +193,5 @@ func GetN(ctx context.Context, numWorkers, maxTries int, stations ...string) (ma
 	close(resultCh)
 	fanInOutWg.Wait()
 
-	return out, err
+	return out, totalTries, err
 }

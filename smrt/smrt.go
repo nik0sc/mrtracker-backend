@@ -7,6 +7,10 @@ import (
 	"go.lepak.sg/mrtracker-backend/model"
 )
 
+const (
+	fakeUA = "SMRT Connect/3.3.3 Android/9.0"
+)
+
 type NextTrains struct {
 	// Common data
 

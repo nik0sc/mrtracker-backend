@@ -43,7 +43,7 @@ func main() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		results, err = smrt.GetN(ctx, len(names), 100, names...)
+		results, _, err = smrt.GetN(ctx, len(names), 100, names...)
 		if err != nil {
 			panic(err)
 		}
