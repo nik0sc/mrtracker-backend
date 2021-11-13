@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"net/http/pprof"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -21,14 +22,22 @@ TODO:
 // StartHttp starts the http server. It blocks until the context is cancelled, then it will shut down the server.
 // It will also start a secondary server to serve prometheus metrics. We could attach pprof, expvar etc to it.
 // Obviously, in the reverse proxy config, only route requests to the first addr and not the second
-func StartHttp(ctx context.Context, addr string, promAddr string) {
+func StartHttp(ctx context.Context, addr string, privAddr string) {
 	wg := &sync.WaitGroup{}
-	promMux := http.NewServeMux()
-	promMux.Handle("/metrics", promhttp.Handler())
-	promSrv := &http.Server{
-		Addr:    promAddr,
-		Handler: promMux,
+	privMux := http.NewServeMux()
+	privMux.Handle("/metrics", promhttp.Handler())
+
+	privMux.HandleFunc("/debug/pprof/", pprof.Index)
+	privMux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	privMux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	privMux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	privMux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
+	privSrv := &http.Server{
+		Addr:    privAddr,
+		Handler: privMux,
 	}
+
 	wg.Add(1)
 	go func(wg *sync.WaitGroup, promSrv *http.Server) {
 		defer wg.Done()
@@ -36,7 +45,7 @@ func StartHttp(ctx context.Context, addr string, promAddr string) {
 		if err != http.ErrServerClosed {
 			log.Fatalf("prom handler: %v", err)
 		}
-	}(wg, promSrv)
+	}(wg, privSrv)
 
 	mux := http.NewServeMux()
 	mux.Handle("/v1/position", position.MustNew(position.NewParam{
@@ -66,7 +75,7 @@ func StartHttp(ctx context.Context, addr string, promAddr string) {
 		log.Printf("error shutting down main server: %v", err)
 	}
 
-	err = promSrv.Shutdown(context.Background())
+	err = privSrv.Shutdown(context.Background())
 	if err != nil {
 		log.Printf("error shutting down prom server: %v", err)
 	}

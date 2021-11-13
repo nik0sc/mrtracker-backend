@@ -15,7 +15,7 @@ const (
 
 	defaultHost     = "0.0.0.0"
 	defaultPort     = "8080"
-	defaultPromAddr = "0.0.0.0:9100" // TODO: restrict to prometheus bridge network only?
+	defaultPrivAddr = "0.0.0.0:9100" // TODO: restrict to prometheus bridge network only?
 )
 
 func main() {
@@ -33,5 +33,5 @@ func main() {
 	}
 
 	addr := fmt.Sprintf("%s:%s", host, port)
-	server.StartHttp(ctx, addr, defaultPromAddr)
+	server.StartHttp(ctx, addr, defaultPrivAddr)
 }
