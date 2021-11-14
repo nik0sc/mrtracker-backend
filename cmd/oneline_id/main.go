@@ -58,7 +58,7 @@ func main() {
 		}
 	}
 
-	modelLine := smrt.ToModel(results, l)
+	modelLine := smrt.StationResultToModel(results, l)
 	if len(modelLine) != len(l) {
 		panic(fmt.Sprintf("dim mismatch %d %d", len(modelLine), len(l)))
 	}
