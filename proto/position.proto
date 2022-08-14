@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package sg.lepak.mrtracker.position;
+
+option go_package = "go.lepak.sg/mrtracker-backend/proto/position";
+
+enum Format {
+    FORMAT_HUMAN = 0;
+    FORMAT_DEV_V1 = 1;
+}
+
+enum Source {
+    // This is live data from SMRT API
+    SOURCE_LIVE = 0;
+    // This is recorded data
+    SOURCE_RECORDED = 1;
+}
+
+message Request {
+    Format format = 1;
+    map<string, string> extra = 2;
+}
+
+message Response {
+    Format format = 1;
+    // Time since Unix epoch in seconds
+    uint64 last_updated = 2;
+    // Data source
+    Source source = 3;
+    oneof data_oneof {
+        string human_readable = 4;
+        DevV1 dev_v1 = 5;
+    }
+}
+
+message DevV1 {
+    // Data for SPI slave 0
+    bytes data_s0 = 1;
+    // Data for SPI slave 1
+    bytes data_s1 = 2;
+    // Data for SPI slave 2
+    bytes data_s2 = 3;
+}
