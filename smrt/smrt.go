@@ -35,14 +35,34 @@ type NextTrains struct {
 	SubseqTrainDestination string `json:"subseq_train_destination,omitempty"`
 }
 
+func arrToInt(a string) int {
+	if a == "Arr" {
+		return 0
+	} else if i, err := strconv.Atoi(a); err != nil {
+		return i
+	} else {
+		return -1
+	}
+}
+
 func (p *NextTrains) Valid() bool {
 	// If station was not found the platform id is empty
 	return p != nil && p.PlatformID != ""
 }
 
+func (p *NextTrains) ToModelPlatform() model.Platform {
+	// model package should not have knowledge of specific data source implementation
+	return model.Platform{
+		Next:  arrToInt(p.NextTrainArr),
+		Dest:  p.NextTrainDestination,
+		Next2: arrToInt(p.SubseqTrainArr),
+		Dest2: p.SubseqTrainDestination,
+	}
+}
+
 type Result []NextTrains
 
-func ToModel(r map[string]Result, src data.Line) model.Line {
+func StationResultToModel(r map[string]Result, src data.Line) model.Line {
 	out := make(model.Line, len(src))
 
 	for i := 0; i < len(src); i++ {
@@ -54,15 +74,7 @@ func ToModel(r map[string]Result, src data.Line) model.Line {
 		platformID := src[i].PlatformID()
 		for _, r := range results {
 			if r.PlatformID == platformID {
-				out[i].Dest = r.NextTrainDestination
-
-				if r.NextTrainArr == "Arr" {
-					out[i].Next = 0
-				} else if nextInt, err := strconv.Atoi(r.NextTrainArr); err == nil {
-					out[i].Next = nextInt
-				} else {
-					out[i].Next = -1
-				}
+				out[i] = r.ToModelPlatform()
 				break
 			}
 		}
@@ -71,7 +83,7 @@ func ToModel(r map[string]Result, src data.Line) model.Line {
 	return out
 }
 
-func ToModelPlatform(r map[string]*NextTrains, src data.Line) model.Line {
+func PlatformResultToModel(r map[string]*NextTrains, src data.Line) model.Line {
 	out := make(model.Line, len(src))
 
 	for i := 0; i < len(src); i++ {
@@ -79,15 +91,7 @@ func ToModelPlatform(r map[string]*NextTrains, src data.Line) model.Line {
 		if !ok {
 			continue
 		}
-		out[i].Dest = r.NextTrainDestination
-
-		if r.NextTrainArr == "Arr" {
-			out[i].Next = 0
-		} else if nextInt, err := strconv.Atoi(r.NextTrainArr); err == nil {
-			out[i].Next = nextInt
-		} else {
-			out[i].Next = -1
-		}
+		out[i] = r.ToModelPlatform()
 	}
 
 	return out

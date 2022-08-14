@@ -158,7 +158,7 @@ func (h *handler) update() {
 
 			workingMap := make(map[string]model.Position)
 			for _, l := range data.GetLines() {
-				workingMap[l.Name] = smrt.ToModel(results, l.Line).ToPosition()
+				workingMap[l.Name] = smrt.StationResultToModel(results, l.Line).ToPosition()
 			}
 
 			for _, l := range data.GetLines() {

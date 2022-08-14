@@ -6,6 +6,8 @@ type Platform struct {
 	// 0: Arr
 	Next int
 	Dest string
+	Next2 int
+	Dest2 string
 }
 
 type Line []Platform

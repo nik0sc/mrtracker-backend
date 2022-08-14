@@ -94,12 +94,12 @@ func main() {
 			}
 
 			lines := map[string]string{
-				"ns1": smrt.ToModel(results, data.NS_1).ToPosition().ToString(),
-				"ns2": smrt.ToModel(results, data.NS_2).ToPosition().ToString(),
-				"ew1": smrt.ToModel(results, data.EW_1).ToPosition().ToString(),
-				"ew2": smrt.ToModel(results, data.EW_2).ToPosition().ToString(),
-				"cg1": smrt.ToModel(results, data.CG_1).ToPosition().ToString(),
-				"cg2": smrt.ToModel(results, data.CG_2).ToPosition().ToString(),
+				"ns1": smrt.StationResultToModel(results, data.NS_1).ToPosition().ToString(),
+				"ns2": smrt.StationResultToModel(results, data.NS_2).ToPosition().ToString(),
+				"ew1": smrt.StationResultToModel(results, data.EW_1).ToPosition().ToString(),
+				"ew2": smrt.StationResultToModel(results, data.EW_2).ToPosition().ToString(),
+				"cg1": smrt.StationResultToModel(results, data.CG_1).ToPosition().ToString(),
+				"cg2": smrt.StationResultToModel(results, data.CG_2).ToPosition().ToString(),
 			}
 
 			err = save(pollCtx, db, now, lines)
